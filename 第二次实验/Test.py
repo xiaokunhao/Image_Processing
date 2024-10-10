@@ -39,7 +39,6 @@ def noise_type(img):
         return "指数噪声"
     else:
         return "其他噪声"
-
 def plot_hist(img):
     """
     绘制图像直方图
