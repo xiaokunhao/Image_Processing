@@ -2,36 +2,45 @@ import cv2
 import numpy as np
 import os
 
-# 输入和输出路径
-input_path = "A3/001.3-bin.png"
-output_path = "A3.3_Result/001.3_result.png"
+def preprocess_image(image_path):
+    result_dir = "A3.3_Result"
+    os.makedirs(result_dir, exist_ok=True)
+    gray=cv2.imread(image_path,0)
+    # 使用自适应阈值化
+    blurred_image = cv2.medianBlur(gray, 5)
+    binary = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 15, 10)
+    # 定义结构元素的大小
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    dilation = cv2.dilate(binary, kernel, iterations=1)
+    # 应用开运算
+    opened_image = cv2.morphologyEx(dilation, cv2.MORPH_OPEN, kernel)
 
-# 创建输出目录（如果不存在）
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    # 存储中间图片
+    cv2.imwrite(os.path.join(result_dir, "binary.png"), binary)
+    cv2.imwrite(os.path.join(result_dir, "open_image.png"), opened_image)
 
-# 读取二值化图像
-image = cv2.imread(input_path, cv2.IMREAD_GRAYSCALE)
-if image is None:
-    print(f"无法读取图像：{input_path}")
-    exit()
+    return opened_image
 
-# 逆转二值图像，使文本区域为白色（255），背景为黑色（0）
-image = cv2.bitwise_not(image)
 
-# 应用中值滤波平滑图像
-smoothed = cv2.medianBlur(image, 11)
+def find_contours(preprocessed_img):
+    # 使用findContours接口寻找轮廓
+    contours, _ = cv2.findContours(preprocessed_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return contours
 
-# 应用膨胀操作连接文本行形成大型连通域
-dilate_kernel = np.ones((5, 5), np.uint8)
-dilated = cv2.dilate(smoothed, dilate_kernel, iterations=3)
 
-# 查找轮廓
-contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+# 主函数
+if __name__ == "__main__":
+    image_path = 'A3/001.3-bin.png'  # 图像路径
+    preprocessed_img = preprocess_image(image_path)
+    contours = find_contours(preprocessed_img)
+    print(len(contours))
+    # 绘制轮廓
+    output_img = preprocessed_img.copy()
+    # 检查并转换图像通道
+    if len(output_img.shape) == 2:
+        output_img = cv2.cvtColor(output_img, cv2.COLOR_GRAY2BGR)
 
-# 在原图上绘制轮廓
-result_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-cv2.drawContours(result_image, contours, -1, (0, 255, 0), 2)
+    # 绘制红色轮廓
+    cv2.drawContours(output_img, contours, -1, (0, 0, 255), 3)
 
-# 保存结果图像
-cv2.imwrite(output_path, result_image)
-print(f"轮廓检测结果已保存到：{output_path}")
+    cv2.imwrite('A3/contours2.png', output_img)  # 保存结果

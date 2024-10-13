@@ -41,16 +41,17 @@ if __name__ == '__main__':
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # 二值化
         _, binary = cv2.threshold(img_gray, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)
-
+        #binary=cv2.adaptiveThreshold(img_gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
         # 显示二值化图像
         cv2.imshow("Binary", binary)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
         rows, cols = binary.shape
-        print("二值化图像：", binary.shape)
+        print("binary.shape：", binary.shape)
 
-        hor_list = [0] * rows  # 行列表
+        hor_list = [0] * rows  #该行代码创建了一个名为hor_list的列表，其长度为rows,并初始化所有元素为 0。
+        print(hor_list)
         for i in range(rows):
             for j in range(cols):
                 # 统计每一行的黑色像素总数
@@ -73,7 +74,7 @@ if __name__ == '__main__':
             print(f'pt1: {pt1}, pt2: {pt2}')
             cv2.line(img_white, pt1, pt2, (0,), 1)
 
-        cv2.imshow('水平投影', img_white)
+        cv2.imshow('horizontal projection', img_white)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
@@ -86,9 +87,7 @@ if __name__ == '__main__':
         for idx, i in enumerate(vv_list):
             img_hor = img_bgr[i[0]:i[-1], :, :]
             output_file = os.path.join(output_dir, f'line_{idx + 1}.png')
-
             cv2.imwrite(output_file, img_hor)
-
             # 显示切分结果（可选）
             cv2.imshow(f'line{idx + 1}', img_hor)
             cv2.waitKey(0)

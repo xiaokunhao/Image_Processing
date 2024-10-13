@@ -1,29 +1,39 @@
 import cv2
-import os
+import numpy as np
 
-# 输入和输出路径
-input_path = "A3/001.3.png"
-output_path = "A3.3_Result/001.3_result.png"
 
-# 创建输出目录（如果不存在）
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
+def preprocess_image(image_path):
+    # 读取图像
+    img = cv2.imread(image_path, 0)
+    img=cv2.medianBlur(img,5)
+    # 二值化处理
+    _, binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-# 读取图像
-image = cv2.imread(input_path, cv2.IMREAD_GRAYSCALE)
-if image is None:
-    print(f"无法读取图像：{input_path}")
-    exit()
+    # 膨胀和腐蚀操作
+    kernel = np.ones((3, 3), np.uint8)
+    dilated = cv2.dilate(binary, kernel, iterations=1)
+    eroded = cv2.erode(dilated, kernel, iterations=1)
 
-# 应用高斯滤波器进行平滑处理，减少噪声
-blurred_image = cv2.GaussianBlur(image, (5, 5), 1.4)
+    return eroded
 
-# 应用 Canny 边缘检测
-low_threshold = 30
-high_threshold = 100
-edges = cv2.Canny(blurred_image, low_threshold, high_threshold)
 
-# 保存结果图像
-cv2.imwrite(output_path, edges)
-print(f"边缘检测结果已保存到：{output_path}")
-#如果检测结果过于稀疏，则可以降低高阈值，例如设置为80，低阈值相应调整为40。
-#如果检测结果包含过多的噪声，可以提高高阈值，例如设置为120，低阈值相应调整为60。
+def find_contours(preprocessed_img):
+    # 使用findContours接口寻找轮廓
+    contours, _ = cv2.findContours(preprocessed_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return contours
+
+
+# 主函数
+if __name__ == "__main__":
+    image_path = 'A3/001.3-bin.png'  # 图像路径
+    preprocessed_img = preprocess_image(image_path)
+    contours = find_contours(preprocessed_img)
+
+    # 绘制轮廓
+    output_img = preprocessed_img.copy()
+    cv2.imshow('lunkuo',output_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cv2.drawContours(output_img, contours, -1, (255), 1)
+    print(len(contours))
+    cv2.imwrite('A3/contours.png', output_img)  # 保存结果
